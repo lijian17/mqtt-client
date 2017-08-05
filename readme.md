@@ -1,18 +1,15 @@
-## Overview
+## 概述
 
-MQTT is a machine-to-machine (M2M)/"Internet of Things" connectivity
-protocol. It was designed as an extremely lightweight publish/subscribe
-messaging transport. It is useful for connections with remote locations where
-a small code footprint is required and/or network bandwidth is at a premium.
+MQTT(Message Queuing Telemetry Transport)是面向"M2M"(Machine-to-Machine)和"物联网"的连接协议，采用轻量级发布/订阅(Publish/Subscribe)模式。
+由于规范很简单，非常适合需要低功耗和网络带宽有限的IoT场景
 
-mqtt-client provides an ASL 2.0 licensed API to MQTT. It takes care of
-automatically reconnecting to your MQTT server and restoring your client
-session if any network failures occur. Applications can use a blocking API
-style, a futures based API, or a callback/continuations passing API style.
+mqtt-client向MQTT提供了一个ASL 2.0许可的API。 
+当网络不稳定时，它能自动重连到您的MQTT服务器并还原您的客户端session。
+您可以使用阻塞式API、基于Futures式API或者callback/continuations式API。
 
-## Using from Maven
+## 在Maven中使用
 
-Add the following to your maven `pom.xml` file.
+添加下面配置到您的maven `pom.xml` 文件.
 
     <dependency>
       <groupId>org.fusesource.mqtt-client</groupId>
@@ -20,185 +17,134 @@ Add the following to your maven `pom.xml` file.
       <version>1.12</version>
     </dependency>
 	
-## Using from Gradle
+## 在Gradle中使用
 
-Add the following to your gradle file.
+添加下面配置到您的 gradle 文件.
 
     compile 'org.fusesource.mqtt-client:mqtt-client:1.12'
 
 
-## Using from any Other Build System
+## 在任何其他Build System中使用
 
-Download the 
+下载这个 
 [uber jar file](https://repository.jboss.org/nexus/content/groups/fs-public/org/fusesource/mqtt-client/mqtt-client/1.7/mqtt-client-1.7-uber.jar) 
-and add it to your build. The uber contains all the stripped down dependencies
-which the mqtt-client depends on from other projects.
+并添加到您的build. 这个 uber 包含所有 mqtt-client 的依赖.
 
-## Using on Java 1.4
+## 在 Java 1.4 中使用
 
-We also provide an 
-[java 1.4 uber jar file](https://repository.jboss.org/nexus/content/groups/fs-public/org/fusesource/mqtt-client/mqtt-client-java1.4-uber/1.7/mqtt-client-java1.4-uber-1.7.jar) 
-which is compatible with Java 1.4 JVMs.  This version of the jar
-does not support SSL connections since the SSLEngine class used to implement SSL on NIO
-was not introduced until Java 1.5.
+我们还提供与Java 1.4 JVM兼容的
+[java 1.4 uber jar file](https://repository.jboss.org/nexus/content/groups/fs-public/org/fusesource/mqtt-client/mqtt-client-java1.4-uber/1.7/mqtt-client-java1.4-uber-1.7.jar)
+文件。 此版本的jar不支持SSL连接，因为用于在NIO上实现SSL的SSLEngine类直到Java 1.5才被引入。
 
-## Configuring the MQTT Connection
+## 配置MQTT连接
 
-The blocking, future, and callback APIs all share the same connection setup.
-You create a new instance of the `MQTT` class and configure it with connection
-and socket related options. At a minimum the `setHost` method be called before
-attempting to connect.
+blocking, future, 和 callback APIs 都共享相同的连接配置.
+您创建一个新的 `MQTT` 实例, 并通过connection和socket相关配置，至少要调用`setHost`方法尝试连接
 
     MQTT mqtt = new MQTT();
     mqtt.setHost("localhost", 1883);
-    // or 
+    // 或 
     mqtt.setHost("tcp://localhost:1883");
     
-### Controlling MQTT Options
+### MQTT设置说明
 
+* `setClientId` : 用于设置会话的客户端ID。 这是一个MQTT服务器用来标识一个会话，其中 `setCleanSession(false);` 正在被使用。 
+  该ID必须为23个字符或更少。 默认为自动生成的ID(根据您的socket地址，端口和时间戳)。
 
-* `setClientId` : Use to set the client Id of the session.  This is what an MQTT server
-  uses to identify a session where `setCleanSession(false);` is being used.  The id must be
-  23 characters or less.  Defaults to auto generated id (based on your socket address, port 
-  and timestamp).
+* `setCleanSession` : 连接前清空会话信息 ,若设为false，MQTT服务器将持久化客户端会话的主体订阅和ACK位置，默认为true
 
-* `setCleanSession` : Set to false if you want the MQTT server to persist topic subscriptions
-  and ack positions across client sessions. Defaults to true.
+* `setKeepAlive` : 设置心跳时间 ,定义客户端传来消息的最大时间间隔秒数，服务器可以据此判断与客户端的连接是否已经断开，从而避免TCP/IP超时的长时间等待
 
-* `setKeepAlive` : Configures the Keep Alive timer in seconds. Defines the maximum time 
-  interval between messages received from a client. It enables the server to detect that the 
-  network connection to a client has dropped, without having to wait for the long TCP/IP timeout. 
+* `setUserName` : 设置用于对服务器进行身份验证的用户名。
 
-* `setUserName` : Sets the user name used to authenticate against the server. 
+* `setPassword` : 设置用于对服务器进行身份验证的密码。
 
-* `setPassword` : Sets the password used to authenticate against the server. 
+* `setWillTopic`: 设置“遗嘱”消息的话题，若客户端与服务器之间的连接意外中断，服务器将发布客户端的“遗嘱”消息.
 
-* `setWillTopic`: If set the server will publish the client's Will 
-  message to the specified topics if the client has an unexpected 
-  disconnection.
+* `setWillMessage`:  设置“遗嘱”消息的内容，默认是长度为零的消息
 
-* `setWillMessage`:  The Will message to send. Defaults to a zero length message.
+* `setWillQos` : 设置“遗嘱”消息的QoS，默认为QoS.AT_MOST_ONCE
 
-* `setWillQos` : Sets the quality of service to use for the Will message.  Defaults
-  to QoS.AT_MOST_ONCE.
+* `setWillRetain`: 若想要在发布“遗嘱”消息时拥有retain选项，则为true
 
-* `setWillRetain`: Set to true if you want the Will to be published with the retain 
-  option.
+* `setVersion`: 设置为“3.1.1”以使用MQTT 3.1.1版。 否则默认为3.1协议版本。
 
-* `setVersion`: Set to "3.1.1" to use MQTT version 3.1.1.  Otherwise defaults to the
-  3.1 protocol version.
+### 失败重连接设置说明
 
-### Controlling Connection Reconnects
+如果发生任何网络错误，Connection将自动重新连接并重新建立消息传递会话。 您可以控制重新连接的频率，并使用以下方法定义重新连接的最大次数：
 
-Connection will automatically reconnect and re-establish messaging session
-if any network error occurs.  You can control how often the reconnect
-is attempted and define maximum number of attempts of reconnects using
-the following methods:
+* `setConnectAttemptsMax` : 在客户端首次尝试连接到服务器时，会将错误之前的重新连接尝试的最大次数报告回客户端。 设置为-1以使用无限次尝试。 默认为-1。
+* `setReconnectAttemptsMax` : 在建立服务器连接之后，将错误之前的重新连接尝试的最大次数报告回客户端。 设置为-1以使用无限次尝试。 默认为-1。
+* `setReconnectDelay` : 在第一次重新连接尝试之前等待多长时间。 默认为10。
+* `setReconnectDelayMax` : 在重新连接尝试之间等待的最大时间（以ms为单位）。 默认为30,000。
+* `setReconnectBackOffMultiplier` : 在重新连接尝试之间使用指数回归。 设置为1以停用指数回归。 默认为2。
 
-* `setConnectAttemptsMax` : The maximum number of reconnect attempts before an error 
-  is reported back to the client on the first attempt by the client to connect to a server. Set
-  to -1 to use unlimited attempts.  Defaults to -1.
-* `setReconnectAttemptsMax` : The maximum number of reconnect attempts before an error 
-  is reported back to the client after a server connection had previously been established. Set
-  to -1 to use unlimited attempts.  Defaults to -1.
-* `setReconnectDelay` : How long to wait in ms before the first reconnect 
-   attempt. Defaults to 10.
-* `setReconnectDelayMax` : The maximum amount of time in ms to wait between 
-   reconnect attempts.  Defaults to 30,000.
-* `setReconnectBackOffMultiplier` : The Exponential backoff be used between reconnect 
-  attempts. Set to 1 to disable exponential backoff. Defaults to 2.
+### Socket设置说明
 
-### Configuring Socket Options
+您可以使用以下方法调整一些socket选项：
 
-You can adjust some socket options by using the following methods:
+* `setReceiveBufferSize` : 设置socket接收缓冲区大小，默认为65536（64k）
 
-* `setReceiveBufferSize` : Sets the size of the internal socket receive 
-   buffer.  Defaults to 65536 (64k)
+* `setSendBufferSize` : 设置socket发送缓冲区大小，默认为65536（64k）
 
-* `setSendBufferSize` : Sets the size of the internal socket send buffer.  
-   Defaults to 65536 (64k)
+* `setTrafficClass` : 设置发送数据包头的流量类型或服务类型字段，默认为 `8` ，意为吞吐量最大化传输
 
-* `setTrafficClass` : Sets traffic class or type-of-service octet in the IP 
-  header for packets sent from the transport.  Defaults to `8` which
-  means the traffic should be optimized for throughput.
+### 带宽限制设置说明
 
-### Throttling Connections
+如果要减慢连接的读取或写入速率，请使用以下方法：
 
-If you want slow down the read or write rate of your connections, use 
-the following methods:
+* `setMaxReadRate` : 设置连接的最大接收速率，单位为bytes/s。默认为0，即无限制
 
-* `setMaxReadRate` : Sets the maximum bytes per second that this transport will
-  receive data at.  This setting throttles reads so that the rate is not exceeded.
-  Defaults to 0 which disables throttling.
+* `setMaxWriteRate` : 设置连接的最大发送速率，单位为bytes/s。默认为0，即无限制
 
-* `setMaxWriteRate` : Sets the maximum bytes per second that this transport will
-  send data at.  This setting throttles writes so that the rate is not exceeded.
-  Defaults to 0 which disables throttling.
+### 使用 SSL 连接
 
-### Using SSL connections
+如果要通过SSL/TLS而不是TCP连接，请对 `host` 字段使用 "ssl://" 或 "tls://" URI前缀，而不是 "tcp://" 。 对于使用哪种算法进行更精细的粒度控制。 支持的协议值有：
 
-If you want to connect over SSL/TLS instead of TCP, use an "ssl://" or
-"tls://" URI prefix instead of "tcp://" for the `host` field. For finer
-grained control of which algorithm is used. Supported protocol values are:
+* `ssl://`    - 使用JVM默认版本的SSL算法。
+* `sslv*://`  - 使用特定的SSL版本，其中 `*` 是您的JVM支持的版本。 示例： `sslv3`
+* `tls://`    - 使用JVM默认版本的TLS算法。
+* `tlsv*://`  - 使用特定的TLS版本，其中 `*` 是您的JVM支持的版本。 示例：`tlsv1.1`
 
-* `ssl://`    - Use the JVM default version of the SSL algorithm.
-* `sslv*://`  - Use a specific SSL version where `*` is a version
-  supported by your JVM.  Example: `sslv3`
-* `tls://`    - Use the JVM default version of the TLS algorithm.
-* `tlsv*://`  - Use a specific TLS version where `*` is a version
-  supported by your JVM.  Example: `tlsv1.1`
+客户端将使用通过JVM系统属性配置的默认JVM  `SSLContext`，除非您使用 `setSslContext` 方法配置MQTT实例。
 
-The client will use the default JVM `SSLContext` which is configured via JVM
-system properties unless you configure the MQTT instance using the
-`setSslContext` method.
+SSL连接对内部线程池执行阻塞操作，除非您调用 `setBlockingExecutor` 方法来配置它们将使用的执行程序。
 
-SSL connections perform blocking operations against internal thread pool
-unless you call the `setBlockingExecutor` method to configure that executor
-they will use instead.
+### 选择调度队列
+[HawtDispatch](http://hawtdispatch.fusesource.org/) 调度队列用于同步对连接的访问。 如果未通过 `setDispatchQueue` 方法配置显式队列，则将为该连接创建一个新的队列。 
+如果希望多个连接共享相同的同步队列，设置显式队列可能会很方便。
 
-### Selecting the Dispatch Queue
+## 使用阻塞API
 
-A [HawtDispatch](http://hawtdispatch.fusesource.org/) dispatch queue is used
-to synchronize access to the connection. If an explicit queue is not
-configured via the `setDispatchQueue` method, then a new queue will be created
-for the connection. Setting an explicit queue might be handy if you want
-multiple connection to share the same queue for synchronization.
-
-## Using the Blocking API
-
-The `MQTT.connectBlocking` method establishes a connection and provides you a connection
-with an blocking API.
+`MQTT.connectBlocking` 方法建立一个连接并提供与阻塞API的连接。
 
     BlockingConnection connection = mqtt.blockingConnection();
     connection.connect();
 
-Publish messages to a topic using the `publish` method:
+使用`publish`方法向主题发布消息：
 
     connection.publish("foo", "Hello".getBytes(), QoS.AT_LEAST_ONCE, false);
 
-You can subscribe to multiple topics using the the `subscribe` method:
+您可以使用`subscribe`方法订阅多个主题：
     
     Topic[] topics = {new Topic("foo", QoS.AT_LEAST_ONCE)};
     byte[] qoses = connection.subscribe(topics);
 
-Then receive and acknowledge consumption of messages using the `receive`, and `ack`
-methods:
+然后使用`receive`和`ack`方法接收并确认消息：
     
     Message message = connection.receive();
     System.out.println(message.getTopic());
     byte[] payload = message.getPayload();
-    // process the message then:
+    // 然后处理消息：
     message.ack();
 
-Finally to disconnect:
+最后断开连接：
 
     connection.disconnect();
 
-## Using the Future based API
+## 使用Future based API
 
-The `MQTT.connectFuture` method establishes a connection and provides you a connection
-with an futures style API.  All operations against the connection are non-blocking and
-return the result via a Future.
+`MQTT.connectFuture`方法建立一个连接，并提供与futures风格API的连接。 对连接的所有操作都是非阻塞的，并通过Future返回结果。
 
     FutureConnection connection = mqtt.futureConnection();
     Future<Void> f1 = connection.connect();
@@ -207,13 +153,13 @@ return the result via a Future.
     Future<byte[]> f2 = connection.subscribe(new Topic[]{new Topic(utf8("foo"), QoS.AT_LEAST_ONCE)});
     byte[] qoses = f2.await();
 
-    // We can start future receive..
+    // 我们可以开始future接收..
     Future<Message> receive = connection.receive();
 
-    // send the message..
+    // 发送message..
     Future<Void> f3 = connection.publish("foo", "Hello".getBytes(), QoS.AT_LEAST_ONCE, false);
 
-    // Then the receive will get the message.
+    // 然后将得到的信息接收.
     Message message = receive.await();
     message.ack();
     
@@ -221,15 +167,12 @@ return the result via a Future.
     f4.await();
 
 
-## Using the Callback/Continuation Passing based API
+## 使用Callback/Continuation Passing based API
 
-The `MQTT.connectCallback` method establishes a connection and provides you a connection with
-an callback style API. This is the most complex to use API style, but can provide the best
-performance. The future and blocking APIs use the callback api under the covers. All
-operations on the connection are non-blocking and results of an operation are passed to
-callback interfaces you implement.
+`MQTT.connectCallback` 方法建立一个连接，并提供与callback样式API的连接。 这是使用API风格最复杂的，但可以提供最佳性能。 
+future和阻塞API使用覆盖下的回调api。 连接上的所有操作都是非阻塞的，操作的结果将传递给您实现的回调接口。
 
-Example:
+示例:
 
     final CallbackConnection connection = mqtt.callbackConnection();
     connection.listener(new Listener() {
@@ -240,68 +183,63 @@ Example:
         }
 
         public void onPublish(UTF8Buffer topic, Buffer payload, Runnable ack) {
-            // You can now process a received message from a topic.
-            // Once process execute the ack runnable.
+            // 您现在可以从主题处理收到的消息。
+            // 一旦进程执行ack runnable。
             ack.run();
         }
         public void onFailure(Throwable value) {
-            connection.close(null); // a connection failure occured.
+            connection.close(null); // 发生连接失败。
         }
     })
     connection.connect(new Callback<Void>() {
         public void onFailure(Throwable value) {
-            result.failure(value); // If we could not connect to the server.
+            result.failure(value); // 如果我们无法连接到服务器。
         }
   
-        // Once we connect..
+        // 一旦我们连接..
         public void onSuccess(Void v) {
         
-            // Subscribe to a topic
+            // 订阅主题
             Topic[] topics = {new Topic("foo", QoS.AT_LEAST_ONCE)};
             connection.subscribe(topics, new Callback<byte[]>() {
                 public void onSuccess(byte[] qoses) {
-                    // The result of the subcribe request.
+                    // subcribe 请求的结果.
                 }
                 public void onFailure(Throwable value) {
-                    connection.close(null); // subscribe failed.
+                    connection.close(null); // 订阅失败
                 }
             });
 
-            // Send a message to a topic
+            // 发送消息到主题
             connection.publish("foo", "Hello".getBytes(), QoS.AT_LEAST_ONCE, false, new Callback<Void>() {
                 public void onSuccess(Void v) {
-                  // the pubish operation completed successfully.
+                  // 发布操作成功完成.
                 }
                 public void onFailure(Throwable value) {
-                    connection.close(null); // publish failed.
+                    connection.close(null); // 发布失败.
                 }
             });
             
-            // To disconnect..
+            // 断开..
             connection.disconnect(new Callback<Void>() {
                 public void onSuccess(Void v) {
-                  // called once the connection is disconnected.
+                  // 一旦连接断开连接就调用.
                 }
                 public void onFailure(Throwable value) {
-                  // Disconnects never fail.
+                  // 断开连接永远不会失败.
                 }
             });
         }
     });
 
-Every connection has a [HawtDispatch](http://hawtdispatch.fusesource.org/) dispatch queue
-which it uses to process IO events for the socket. The dispatch queue is an Executor that
-provides serial execution of IO and processing events and is used to ensure synchronized
-access of connection.
+每个连接都有一个[HawtDispatch](http://hawtdispatch.fusesource.org/) 调度队列，用于处理套接字的IO事件。 
+调度队列是提供IO和处理事件的串行执行的执行程序，用于确保连接的同步访问。
 
-The callbacks will be executing the dispatch queue associated with the connection so
-it safe to use the connection from the callback but you MUST NOT perform any blocking
-operations within the callback. If you need to perform some processing which MAY block, you
-must send it to another thread pool for processing. Furthermore, if another thread needs to
-interact with the connection it can only do it by using a Runnable submitted to the
-connection's dispatch queue.
+回调将执行与连接相关联的调度队列，因此可以安全地使用回调中的连接，但您不得在回调中执行任何阻止操作。 
+如果您需要执行可能阻止的某些处理，则必须将其发送到另一个线程池进行处理。 
+此外，如果另一个线程需要与连接交互，那么它只能通过使用提交到连接的调度队列的Runnable来实现。
 
-Example of executing a Runnable on the connection's dispatch queue:
+在连接的调度队列上执行Runnable的示例:
 
     connection.getDispatchQueue().execute(new Runnable(){
         public void run() {
