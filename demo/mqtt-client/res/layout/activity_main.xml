@@ -1,0 +1,25 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical" >
+
+    <Button
+        android:id="@+id/btn_blocking"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Blocking模式" />
+
+    <Button
+        android:id="@+id/btn_future"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Future模式" />
+
+    <Button
+        android:id="@+id/btn_callback"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Callback模式" />
+
+</LinearLayout>
