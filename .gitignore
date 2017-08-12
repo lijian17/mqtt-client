@@ -33,3 +33,6 @@ mqtt-client/in/
 mqtt-client/lib/
 mqtt-client/usage.txt
 
+
+/demo/mqtt-client/bin
+/demo/mqtt-client/gen
