@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>test Ws mqtt.js</title>
+	<script src="./mqtt.min.js"></script>
+</head>
+<body>
+<input type="text" id="sendMsg"></input>
+<button id="send" onclick="send();">发送</button>
+<div id="message"></div>
+
+<script type="text/javascript">
+//var client = mqtt.connect('tcp://192.168.1.101:61613'); // you add a ws:// url here
+var client = mqtt.connect('ws://192.168.1.101:61623', {username:"admin", password:"password"}); // you add a ws:// url here
+
+// 订阅
+client.subscribe("mqtt_bbb");
+
+// 接收消息
+client.on("message", function(topic, payload) {
+	var eMsg = document.getElementById("message");
+	eMsg.innerHTML = eMsg.innerHTML + "<br/>" + [topic, payload].join(": ");
+
+	console.log([topic, payload].join(": "));
+	//client.end();
+});
+
+// 发送
+function send() {
+	var sendMsg = document.getElementById("sendMsg").value;
+	if(!sendMsg) {
+		alert("发送内容不能为空");
+		return;
+	}
+	client.publish("mqtt_aaa", sendMsg);
+	var eMsg = document.getElementById("message");
+	eMsg.innerHTML = eMsg.innerHTML + "<br/>" + sendMsg;
+}
+</script>
+</body>
+</html>
